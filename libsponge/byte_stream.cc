@@ -10,44 +10,54 @@
 template <typename... Targs>
 void DUMMY_CODE(Targs &&... /* unused */) {}
 
-using namespace std;
+ByteStream::ByteStream(const size_t bytes): buffer{std::vector<char>(bytes)}, capacity{bytes} {}
 
-ByteStream::ByteStream(const size_t capacity) { DUMMY_CODE(capacity); }
+size_t ByteStream::write(const std::string &data) {
+    // if the stream has ended or the buffer is full, no more bytes can be written
+    if (this->input_ended() || this->remaining_capacity() == 0)
+        return 0;
 
-size_t ByteStream::write(const string &data) {
-    DUMMY_CODE(data);
-    return {};
+    size_t written = 0;
+    for (auto source = data.begin(); source != data.end() && this->remaining_capacity();
+         ++source, ++this->size, ++written) {
+        size_t destination = this->wrap_index(this->start + this->buffer_size());
+        this->buffer[destination] = *source;
+    }
+    this->_bytes_written += written;
+    return written;
 }
 
-//! \param[in] len bytes will be copied from the output side of the buffer
-string ByteStream::peek_output(const size_t len) const {
-    DUMMY_CODE(len);
-    return {};
+std::string ByteStream::peek_output(const size_t len) const {
+    std::string data;
+
+    // if the buffer is empty, no more bytes can be read
+    if (this->buffer_empty())
+        return data;
+
+    for (size_t _bytes_peeked = 0, remaining_size = this->buffer_size(); remaining_size && _bytes_peeked < len;
+         --remaining_size, ++_bytes_peeked) {
+        size_t index = this->wrap_index(this->start + _bytes_peeked);
+        data.append(1, this->buffer[index]);
+    }
+    return data;
 }
 
-//! \param[in] len bytes will be removed from the output side of the buffer
-void ByteStream::pop_output(const size_t len) { DUMMY_CODE(len); }
+void ByteStream::pop_output(const size_t len) {
+    this->_bytes_read += len <= this->buffer_size() ? len : this->buffer_size();
+    this->size = len <= this->buffer_size() ? this->size - len : 0;
+    this->start = this->wrap_index(this->start + len);
+}
 
-//! Read (i.e., copy and then pop) the next "len" bytes of the stream
-//! \param[in] len bytes will be popped and returned
-//! \returns a string
 std::string ByteStream::read(const size_t len) {
-    DUMMY_CODE(len);
-    return {};
+    std::string data = this->peek_output(len);
+    this->pop_output(len);
+    return data;
 }
 
-void ByteStream::end_input() {}
+size_t ByteStream::buffer_size() const { return this->size; }
 
-bool ByteStream::input_ended() const { return {}; }
+bool ByteStream::buffer_empty() const { return this->buffer_size() == 0; }
 
-size_t ByteStream::buffer_size() const { return {}; }
+bool ByteStream::eof() const { return this->buffer_empty() && this->input_ended(); }
 
-bool ByteStream::buffer_empty() const { return {}; }
-
-bool ByteStream::eof() const { return false; }
-
-size_t ByteStream::bytes_written() const { return {}; }
-
-size_t ByteStream::bytes_read() const { return {}; }
-
-size_t ByteStream::remaining_capacity() const { return {}; }
+size_t ByteStream::remaining_capacity() const { return this->capacity - this->buffer_size(); }
