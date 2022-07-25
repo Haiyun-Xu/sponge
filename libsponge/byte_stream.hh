@@ -2,6 +2,7 @@
 #define SPONGE_LIBSPONGE_BYTE_STREAM_HH
 
 #include <string>
+#include <vector>
 
 //! \brief An in-order byte stream.
 
@@ -17,7 +18,18 @@ class ByteStream {
     // that's a sign that you probably want to keep exploring
     // different approaches.
 
-    bool _error{};  //!< Flag indicating that the stream suffered an error.
+    bool _error{};        //!< Flag indicating that the stream suffered an error.
+    bool stream_ended{};  //!< Flag indicating that the stream has ended.
+
+    std::vector<char> buffer;
+    size_t capacity;
+    size_t size = 0;   //!< Size of the in-transit sequence.
+    size_t start = 0;  //!< Index of the first byte of the in-transit sequence.
+
+    size_t _bytes_written = 0;
+    size_t _bytes_read = 0;
+
+    size_t wrap_index(const size_t index) const { return this->capacity == 0 ? 0 : index % this->capacity; }
 
   public:
     //! Construct a stream with room for `capacity` bytes.
@@ -35,10 +47,10 @@ class ByteStream {
     size_t remaining_capacity() const;
 
     //! Signal that the byte stream has reached its ending
-    void end_input();
+    void end_input() { this->stream_ended = true; }
 
     //! Indicate that the stream suffered an error.
-    void set_error() { _error = true; }
+    void set_error() { this->_error = true; }
     //!@}
 
     //! \name "Output" interface for the reader
@@ -56,10 +68,10 @@ class ByteStream {
     std::string read(const size_t len);
 
     //! \returns `true` if the stream input has ended
-    bool input_ended() const;
+    bool input_ended() const { return this->stream_ended; }
 
     //! \returns `true` if the stream has suffered an error
-    bool error() const { return _error; }
+    bool error() const { return this->_error; }
 
     //! \returns the maximum amount that can currently be read from the stream
     size_t buffer_size() const;
@@ -75,10 +87,10 @@ class ByteStream {
     //!@{
 
     //! Total number of bytes written
-    size_t bytes_written() const;
+    size_t bytes_written() const { return this->_bytes_written; }
 
     //! Total number of bytes popped
-    size_t bytes_read() const;
+    size_t bytes_read() const { return this->_bytes_read; }
     //!@}
 };
 
