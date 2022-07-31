@@ -3,48 +3,112 @@
 
 #include "byte_stream.hh"
 
+#include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <string>
+#include <vector>
 
-//! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
-//! possibly overlapping) into an in-order byte stream.
+/**
+ * @brief A class that assembles byte sequences into an in-order byte stream.
+ */
 class StreamReassembler {
   private:
-    // Your code here -- add private members as necessary.
+    std::size_t capacity_stream;  // The max number of bytes in the output stream
+    std::size_t capacity_window;  // The max number of bytes in the buffer window
 
-    ByteStream _output;  //!< The reassembled in-order byte stream
-    size_t _capacity;    //!< The maximum number of bytes
+    ByteStream _output;          // The output stream
+    std::vector<char> window;    // The buffer window
+    std::vector<bool> received;  // Flags noting which window bytes are received
+
+    std::uint64_t index_stream{0};  // The stream index of the first byte in the window
+    std::uint64_t index_eof{~std::uint64_t(0)};  // The stream index of the eof, one past the last byte
+
+    /**
+     * @brief Converts a stream index into a window index.
+     *
+     * @param index The stream index.
+     * @return std::uint64_t The window index.
+     */
+    std::size_t stream_to_window_index(const std::uint64_t index) const;
+
+    /**
+     * @brief Try to push the string `data`, which starts at `index` in the
+     * stream, into the window.
+     *
+     * @param data A string.
+     * @param index Where `data` starts in the stream.
+     *
+     * @return std::size_t The number of contiguous bytes (can start from anywhere
+     * in `data`) that was successfully pushed into the window.
+     */
+    std::size_t try_push_substring(const std::string &data, const std::uint64_t index);
+
+    /**
+     * @brief Returns the number of contiguous bytes in the window, starting from
+     * the beginning of the window.
+     *
+     * @return std::size_t The number of contiguous bytes.
+     */
+    std::size_t contiguous_bytes() const;
+
+    /**
+     * @brief Assemble the unassenbled bytes in the window, and write as many as
+     * possible into the output stream.
+     *
+     * @return std::size_t The number of bytes written into the output stream.
+     */
+    std::size_t assemble();
 
   public:
-    //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
-    //! \note This capacity limits both the bytes that have been reassembled,
-    //! and those that have not yet been reassembled.
-    StreamReassembler(const size_t capacity);
+    /**
+     * @brief Construct a new Stream Reassembler object.
+     * @note Assembled bytes are written into the output stream, and unassembled
+     * bytes are kept in the buffer window.
+     *
+     * @param capacity The total number of assembled + unassembled bytes that
+     * can be stored in the object.
+     */
+    StreamReassembler(const std::size_t capacity);
 
-    //! \brief Receive a substring and write any newly contiguous bytes into the stream.
-    //!
-    //! The StreamReassembler will stay within the memory limits of the `capacity`.
-    //! Bytes that would exceed the capacity are silently discarded.
-    //!
-    //! \param data the substring
-    //! \param index indicates the index (place in sequence) of the first byte in `data`
-    //! \param eof the last byte of `data` will be the last byte in the entire stream
-    void push_substring(const std::string &data, const uint64_t index, const bool eof);
+    /**
+     * @brief Push the string `data`, which starts at `index` in stream, into
+     * the window, then assemble and write any contiguous bytes into the output
+     * stream.
+     *
+     * @param data A string.
+     * @param index Where `data` starts in the stream.
+     * @param eof Whether the last byte of `data` is the last byte of the stream.
+     */
+    void push_substring(const std::string &data, const std::uint64_t index, const bool eof);
 
-    //! \name Access the reassembled byte stream
+    /**
+     * @brief Return the output stream.
+     *
+     * @return ByteStream The output stream.
+     */
     //!@{
     const ByteStream &stream_out() const { return _output; }
     ByteStream &stream_out() { return _output; }
     //!@}
 
-    //! The number of bytes in the substrings stored but not yet reassembled
-    //!
-    //! \note If the byte at a particular index has been pushed more than once, it
-    //! should only be counted once for the purpose of this function.
-    size_t unassembled_bytes() const;
+    /**
+     * @brief Returns the number of unassembled bytes, i.e. the number of bytes
+     * in the window.
+     * @note If a byte in the stream has been pushed more than once, it should
+     * only be counted once for the purpose of this function.
+     *
+     * @return std::size_t The number of bytes in the window.
+     */
+    std::size_t unassembled_bytes() const;
 
-    //! \brief Is the internal state empty (other than the output stream)?
-    //! \returns `true` if no substrings are waiting to be assembled
+    /**
+     * @brief Returns whether the window is empty, i.e. whether there's any
+     * unassembled bytes.
+     *
+     * @return true If there's no unassembled bytes.
+     * @return false If there's unassembled bytes.
+     */
     bool empty() const;
 };
 

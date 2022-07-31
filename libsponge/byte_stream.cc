@@ -10,7 +10,7 @@
 template <typename... Targs>
 void DUMMY_CODE(Targs &&... /* unused */) {}
 
-ByteStream::ByteStream(const size_t bytes): buffer{std::vector<char>(bytes)}, capacity{bytes} {}
+ByteStream::ByteStream(const size_t bytes) : buffer{std::vector<char>(bytes)}, capacity{bytes} {}
 
 size_t ByteStream::write(const std::string &data) {
     // if the stream has ended or the buffer is full, no more bytes can be written
