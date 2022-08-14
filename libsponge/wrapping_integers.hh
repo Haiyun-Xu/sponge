@@ -17,23 +17,27 @@ class WrappingInt32 {
     uint32_t raw_value() const { return _raw_value; }  //!< Access raw stored value
 };
 
-//! Transform a 64-bit absolute sequence number (zero-indexed) into a 32-bit relative sequence number
-//! \param n the absolute sequence number
-//! \param isn the initial sequence number
-//! \returns the relative sequence number
-WrappingInt32 wrap(uint64_t n, WrappingInt32 isn);
+/**
+ * @brief Transform a 64-bit ASN into a WrappingInt32 SN.
+ * 
+ * @param asn The ASN
+ * @param isn The ISN
+ * @return WrappingInt32 
+ */
+WrappingInt32 wrap(uint64_t asn, WrappingInt32 isn);
 
-//! Transform a 32-bit relative sequence number into a 64-bit absolute sequence number (zero-indexed)
-//! \param n The relative sequence number
-//! \param isn The initial sequence number
-//! \param checkpoint A recent absolute sequence number
-//! \returns the absolute sequence number that wraps to `n` and is closest to `checkpoint`
-//!
-//! \note Each of the two streams of the TCP connection has its own ISN. One stream
-//! runs from the local TCPSender to the remote TCPReceiver and has one ISN,
-//! and the other stream runs from the remote TCPSender to the local TCPReceiver and
-//! has a different ISN.
-uint64_t unwrap(WrappingInt32 n, WrappingInt32 isn, uint64_t checkpoint);
+/**
+ * @brief Transform a WrappingInt32 SN into a 64-bit ASN.
+ * 
+ * @note This function makes the assumption that the ASN is no smaller than the
+ * checkpoint.
+ * 
+ * @param sn The SN
+ * @param isn The ISN
+ * @param checkpoint A 64-bit number close to ASN
+ * @return uint64_t 
+ */
+uint64_t unwrap(WrappingInt32 sn, WrappingInt32 isn, uint64_t checkpoint);
 
 //! \name Helper functions
 //!@{
