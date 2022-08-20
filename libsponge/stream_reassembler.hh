@@ -21,7 +21,7 @@ class StreamReassembler {
     std::vector<char> window;    // The buffer window
     std::vector<bool> received;  // Flags noting which window bytes are received
 
-    std::uint64_t index_stream{0};  // The stream index of the first byte in the window
+    std::uint64_t index_stream{0};               // The stream index of the first byte in the window
     std::uint64_t index_eof{~std::uint64_t(0)};  // The stream index of the eof, one past the last byte
 
     /**

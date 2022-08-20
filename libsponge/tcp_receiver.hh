@@ -17,49 +17,53 @@ class TCPReceiver {
     //! Our data structure for re-assembling bytes.
     StreamReassembler _reassembler;
 
-    //! The maximum number of bytes we'll store.
-    size_t _capacity;
+    size_t _capacity;  //! The maximum number of bytes we'll store.
+    uint32_t ISN{0};   //! The initial sequence number.
+    uint64_t ASN{0};   //! The absolute sequence number, also the absolute acknowledgement number.
 
   public:
-    //! \brief Construct a TCP receiver
-    //!
-    //! \param capacity the maximum number of bytes that the receiver will
-    //!                 store in its buffers at any give time.
+    /**
+     * @brief Construct a new TCPReceiver object.
+     *
+     * @param capacity The maximum number of bytes that the receiver will store
+     * in its StreamReassembler buffer.
+     */
     TCPReceiver(const size_t capacity) : _reassembler(capacity), _capacity(capacity) {}
-
-    //! \name Accessors to provide feedback to the remote TCPSender
-    //!@{
-
-    //! \brief The ackno that should be sent to the peer
-    //! \returns empty if no SYN has been received
-    //!
-    //! This is the beginning of the receiver's window, or in other words, the sequence number
-    //! of the first byte in the stream that the receiver hasn't received.
-    std::optional<WrappingInt32> ackno() const;
-
-    //! \brief The window size that should be sent to the peer
-    //!
-    //! Operationally: the capacity minus the number of bytes that the
-    //! TCPReceiver is holding in its byte stream (those that have been
-    //! reassembled, but not consumed).
-    //!
-    //! Formally: the difference between (a) the sequence number of
-    //! the first byte that falls after the window (and will not be
-    //! accepted by the receiver) and (b) the sequence number of the
-    //! beginning of the window (the ackno).
-    size_t window_size() const;
-    //!@}
 
     //! \brief number of bytes stored but not yet reassembled
     size_t unassembled_bytes() const { return _reassembler.unassembled_bytes(); }
-
-    //! \brief handle an inbound segment
-    void segment_received(const TCPSegment &seg);
 
     //! \name "Output" interface for the reader
     //!@{
     ByteStream &stream_out() { return _reassembler.stream_out(); }
     const ByteStream &stream_out() const { return _reassembler.stream_out(); }
+    //!@}
+
+    /**
+     * @brief Process a received TCP segment.
+     *
+     * @param seg The received TCP segment
+     */
+    void segment_received(const TCPSegment &seg);
+
+    //! \name Accessors to provide feedback to the remote TCPSender
+    //!@{
+
+    /**
+     * @brief Returns the 32-bit acknowledgement number, or an empty std::optional
+     * object if the ISN hasn't been received.
+     *
+     * @return std::optional<WrappingInt32>
+     */
+    std::optional<WrappingInt32> ackno() const;
+
+    /**
+     * @brief Returns the size of the receiving window, i.e. the distance from
+     * the first receivable byte to the first unreceivable byte.
+     *
+     * @return size_t
+     */
+    size_t window_size() const;
     //!@}
 };
 

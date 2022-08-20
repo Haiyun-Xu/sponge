@@ -19,23 +19,23 @@ class WrappingInt32 {
 
 /**
  * @brief Transform a 64-bit ASN into a WrappingInt32 SN.
- * 
+ *
  * @param asn The ASN
  * @param isn The ISN
- * @return WrappingInt32 
+ * @return WrappingInt32
  */
 WrappingInt32 wrap(uint64_t asn, WrappingInt32 isn);
 
 /**
  * @brief Transform a WrappingInt32 SN into a 64-bit ASN.
- * 
+ *
  * @note This function makes the assumption that the ASN is no smaller than the
  * checkpoint.
- * 
+ *
  * @param sn The SN
  * @param isn The ISN
  * @param checkpoint A 64-bit number close to ASN
- * @return uint64_t 
+ * @return uint64_t
  */
 uint64_t unwrap(WrappingInt32 sn, WrappingInt32 isn, uint64_t checkpoint);
 
